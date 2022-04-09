@@ -10,13 +10,25 @@ The purpose of this project is to accurately analyze a dataset consisting of sto
 
 ### Original Code Performance
 
-The original code consisted of the following nested For loop
+The original code consisted of the following nested For loop which loops through the entire dataset 12 times
 
 ```
   For i = 0 to 11
         
         ticker = tickers(i)
         totalVolume = 0
+   ...
+        '6) Output data for current ticker
+        Worksheets("All Stocks Analysis").Activate
+        Cells(4 + i, 1) = ticker
+        Cells(4 + i, 2) = totalVolume
+        Cells(4 + i, 3) = (endingPrice / startingPrice) - 1
+    Next i
+ ```
+
+ The first loop (above) only reset the Volume variable to 0 and increased the ticker count, then output the data
+
+```
         '5) loop through rows in the data
         Worksheets("2018").Activate
         For j = 2 To RowCount
@@ -40,14 +52,10 @@ The original code consisted of the following nested For loop
             End If
             
         Next j
-        '6) Output data for current ticker
-        Worksheets("All Stocks Analysis").Activate
-        Cells(4 + i, 1) = ticker
-        Cells(4 + i, 2) = totalVolume
-        Cells(4 + i, 3) = (endingPrice / startingPrice) - 1
-    Next i
- ```
+```  
 
+Whereas the second loop, nested inside the first, retrieved one ticker's data on each iteration of the loop, before moving back out to the first loop to do it all again for the next ticker. 
+        
 This worked well enough for only 12 stock tickers in the data, and had the following outcomes for the "2017" and "2018" stock datasets:
  
  ![2017_before_refactoring](https://user-images.githubusercontent.com/100869713/162584332-78503001-7729-433f-a8a6-54b7e85bfa0b.png)
@@ -58,14 +66,19 @@ As seen above, each macro took greater than half a second to run through the dat
 
 ### Refactored Code Performance
 
-The refactored code reduced the data-retrieval For loop to one pass through the data to get the starting price, ending price, and trade volume.
+The refactored code reduced the data-retrieval For loop to one pass through the data to get the starting price, ending price, and trade volume of each ticker.
+
 ```
 ''2b) Loop over all the rows in the spreadsheet.
     For i = 2 To RowCount
     
         '3a) Increase volume for current ticker
         tickerVolumes(tickerIndex) = tickerVolumes(tickerIndex) + Cells(i, 8).Value
-        
+  ```
+  
+  Using the variable tickerIndex, the loop was able to differentiate each individual ticker on one pass and increase only that ticker's volume
+ 
+ ```       
         '3b) Check if the current row is the first row with the selected tickerIndex.
         'If  Then
         If Cells(i, 1).Value = tickers(tickerIndex) And Cells(i - 1, 1).Value <> tickers(tickerIndex) Then
@@ -81,6 +94,11 @@ The refactored code reduced the data-retrieval For loop to one pass through the 
         If Cells(i, 1).Value = tickers(tickerIndex) And Cells(i + 1, 1).Value <> tickers(tickerIndex) Then
         
                 tickerEndingPrices(tickerIndex) = Cells(i, 6).Value
+```
+     
+Then it retrieved the starting and ending price of each ticker, without needing to loop back around to the beginning of the data.
+
+```
                 
             '3d Increase the tickerIndex.
             
@@ -90,6 +108,7 @@ The refactored code reduced the data-retrieval For loop to one pass through the 
     
     Next i
 ```
+And finally, it increased the ticker index and returned to the beginning of the single loop, allowing the whole macro to run in only one loop.
 
 This allowed the macro to run ***88% faster*** for the 2018 dataset and ***86% faster*** for the 2017 dataset. 
 
